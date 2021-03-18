@@ -1,6 +1,9 @@
 
 *.json
-*.jpg
 *.pt
 *.eps
 *.weights
+/data/outcome_conf_0p4_nms_0p6/
+/data/outcome/
+/data/val2017/
+/results/
