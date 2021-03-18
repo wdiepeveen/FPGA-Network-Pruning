@@ -84,12 +84,16 @@ class SpConv:
                 Hwj = Gxj * Gyj * Pj * 2 / self.Nin
 
                 # Ideal pruning rate
-                Prj = 1 - (self.peak_performance * Hfj) / (self.bandwidth * Oj - self.peak_performance * Hwj)
+                p = (self.peak_performance * Hfj) / (self.bandwidth * Oj - self.peak_performance * Hwj)
+                if 0 < p < 1:
+                    Prj = 1 - p
+                else:
+                    Prj = 0.
 
-                if Prj < 0:
-                    Prj = 0
-                elif Prj > 1:
-                    Prj = 1  # should choose max allowable pruning rate
+                # if Prj < 0:
+                #     Prj = 0.
+                # elif Prj > 1:
+                #     Prj = 0.  # should choose max allowable pruning rate
 
                 Pr.append(Prj)
 
@@ -104,6 +108,7 @@ class SpConv:
         j = 1
         I = []
         GF = []
+        T = []
         for name, module in self.model.named_modules():
             if isinstance(module, torch.nn.Conv2d):
                 Wj = conv_widths[j]
@@ -126,13 +131,20 @@ class SpConv:
 
                 Hfj = Gxj * Gyj * Swinj * ((self.Ny - 1) * Sj - Kj) * Cj * self.BW / 8
                 Hwj = Gxj * Gyj * Pj * 2 / self.Nin
+                # print("O = {} | Hf = {} | Hw = {}".format(Oj, Hfj, Hwj))
 
                 Ij = Oj * (1 - Pr[j-1]) / (Hfj + Hwj * (1 - Pr[j-1]))
+                # print("Pr[j-1] = {} | Ij = {}".format(Pr[j-1],Ij))
 
                 # Evaluate roofline model
                 I.append(Ij)
-                GF.append(min(self.bandwidth * Ij, self.peak_performance))
+                GFj = min(self.bandwidth * Ij, self.peak_performance)
+                GF.append(GFj)
+
+                # Estimate runtime for layer j
+                Tj = Oj * (1 - Pr[j-1]) / GFj
+                T.append(Tj)
 
                 j += 1
 
-        return I, GF
+        return I, GF, T

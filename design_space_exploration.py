@@ -9,18 +9,27 @@ from pruning.yolov4_weight_pruning_pytorch import do_weight_pruning
 if __name__ == "__main__":
 
     # Setup FPGA parameters
-    max_prune_rate = 0.5  # a feasible prune rate for your application (found prior to the design process)
+    max_prune_rate = 0.9  # a feasible prune rate for your application (found prior to the design process)
 
     # Tunable parameters (To optimize in this script)
-    Nin = 40  # Batch size of the input
-    Ny = 13  # Number of parallel convolutions in the column direction
+    Nin = 60  # Batch size of the input
+    Ny = 6  # Number of parallel convolutions in the column direction
     Nscu = 2  # Number of SCUs
-    Df = 3840  # Depth of line buffer in the Feature buffer
+    Df = 4000  # Depth of line buffer in the Feature buffer
     BW = 8  # aimed bit word length after quantizing
+
+    # Nin = 40  # Batch size of the input
+    # Ny = 13  # Number of parallel convolutions in the column direction
+    # Nscu = 2  # Number of SCUs
+    # Df = 3840  # Depth of line buffer in the Feature buffer
+    # BW = 8  # aimed bit word length after quantizing
 
     # Board parameters
     freq = 0.2e9  # Clock frequency
-    bandwidth = 4e8  # Memory bandwidth
+    bandwidth = 3e8  # Memory bandwidth
+
+    # freq = 0.2e9  # Clock frequency
+    # bandwidth = 4e8  # Memory bandwidth
 
     cfgfile = os.path.join("cfg", "yolov4.cfg")
     weightfile = os.path.join("weights", "yolov4.weights")
@@ -36,7 +45,7 @@ if __name__ == "__main__":
     Pr = sparse_conv.roofline_pruning_rates()
 
     # Compute base case
-    I_base, GF_base = sparse_conv.roofline_evaluate([0]*len(Pr))
+    I_base, GF_base, T_base = sparse_conv.roofline_evaluate([0]*len(Pr))
 
     Is = np.linspace(start=0, stop=max(max(I_base), 200), num=1000)
     # Plot base case results
@@ -66,8 +75,15 @@ if __name__ == "__main__":
     prune_rates_rl.append(prune_rate_rl)
 
     # Evaluate pruning
-    I_gl, GF_gl = sparse_conv.roofline_evaluate(Pr_gl)
-    I_rl, GF_rl = sparse_conv.roofline_evaluate(Pr_rl)
+    I_gl, GF_gl, T_gl = sparse_conv.roofline_evaluate(Pr_gl)
+    I_rl, GF_rl, T_rl = sparse_conv.roofline_evaluate(Pr_rl)
+
+    T_base_tot = sum(T_base)
+    T_gl_tot = sum(T_gl)
+    T_rl_tot = sum(T_rl)
+
+    print("T_base = {} | T_gl = {} | T_rl = {}".format(T_base_tot, T_gl_tot, T_rl_tot))
+    print("speedup global pruning = {} | speedup roofline optimized pruning = {}".format(T_base_tot/T_gl_tot, T_base_tot/T_rl_tot))
 
     # Plot Global weight pruning results
     plt.figure()
