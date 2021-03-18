@@ -2,8 +2,8 @@
 
 ```
 ├── README.md
-├── design_space_exploration.py           pruning experiment (3.1)
-├── prune_yolov4_pytorch.py               roofline optimization (3.2)
+├── prune_yolov4_pytorch.py               roofline optimization (3.1)
+├── design_space_exploration.py           pruning experiment (3.2)
 ```
 
 # Installation
